@@ -232,4 +232,4 @@ Summary
 
 In conclusion, we went with the Random Forest model because: \* It gave nearly the same accuracy as Boosted \* Performed much faster than building and combinding with the other algorithims \* With estimated accuracy of 99%, there is little need for improvement
 
-Out final Random Forest model was built using five fold cross validation.
+Our final Random Forest model was built using five fold cross validation.
