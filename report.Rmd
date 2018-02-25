@@ -148,6 +148,11 @@ accuracy <- postResample(pred_rf, testing$classe)
 accuracy
 ```
 
+And the expected out of sample error:
+```{r outError, cache=TRUE}
+outOfSampleError <- sum(pred_rf == testing$classe)/length(pred_rf)
+```
+
 ## Summary
 In conclusion, we went with the Random Forest model because:
 * It gave nearly the same accuracy as Boosted

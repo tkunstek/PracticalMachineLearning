@@ -171,6 +171,10 @@ mod_rf</code></pre>
 accuracy</code></pre>
 <pre><code>## Accuracy    Kappa 
 ##        1        1</code></pre>
+<p>And the expected out of sample error:</p>
+<pre class="sourceCode r"><code class="sourceCode r">
+outOfSampleError <- sum(pred_rf == testing$classe)/length(pred_rf)
+</code></pre>
 <h2 id="summary">Summary</h2>
 <p>In conclusion, we went with the Random Forest model because: * It gave nearly the same accuracy as Boosted * Performed much faster than building and combinding with the other algorithims * With estimated accuracy of 99%, there is little need for improvement</p>
 <p>Our final Random Forest model was built using five fold cross validation.</p>

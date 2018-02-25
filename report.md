@@ -227,6 +227,12 @@ accuracy
     ## Accuracy    Kappa 
     ##        1        1
 
+
+And the expected out of sample error:
+``` r
+outOfSampleError <- sum(pred_rf == testing$classe)/length(pred_rf)
+```
+
 Summary
 -------
 
