@@ -62,36 +62,99 @@ dropCol <- c("user_name", "raw_timestamp_part_1", "raw_timestamp_part_2", "cvtd_
 trainCsv <- trainCsv[, -which(names(trainCsv) %in% dropCol)]
 testCsv <- testCsv[, -which(names(testCsv) %in% dropCol)]
 
+# Even with this a Random Forest with 200 trees was still taking forever
+# so lets turn our classe into a factor and set it aside for a moment
+trainClasse <- as.factor(trainCsv$classe)
+
+# Next lets strip out everything non-numeric
+trainCsv <- trainCsv[, sapply(trainCsv, is.numeric)]
+testCsv <- testCsv[, sapply(testCsv, is.numeric)]
+
+# Then put our classe back
+trainCsv$classe <- trainClasse
+
 # Finally partition the data
 set.seed(19622)
 inTrain <- createDataPartition(trainCsv$classe, p = 3/4)[[1]]
-trainData <- trainCsv[inTrain,]
-testData <- trainCsv[-inTrain,]
+training <- trainCsv[inTrain,]
+testing <- trainCsv[-inTrain,]
 ```
 
+## Model Building
+Next we are going to build three different models and then combine the models and see what accuracy we get from each scenario
 
+```{r models, cache=TRUE}
+# Random Forest
+mod_rf <- train(classe ~ ., data = training, method = "rf")
+# Boosted
+mod_gbm <- train(classe ~ ., data = training, method = "gbm", verbose=FALSE)
+# Latent allocation
+mod_lda <- train(classe ~ ., data = training, method = "lda")
 
+# Run predictors
+pred_rf <- predict(mod_rf, testing)
+pred_gbm <- predict(mod_gbm, testing)
+pred_lda <- predict(mod_lda, testing)
 
-
-
-## GitHub Documents
-
-This is an R Markdown format used for publishing markdown documents to GitHub. When you click the **Knit** button all R code chunks are run and a markdown file (.md) suitable for publishing to GitHub is generated.
-
-## Including Code
-
-You can include R code in the document as follows:
-
-```{r cars}
-summary(cars)
+# Combined
+predDF <- data.frame(pred_rf, pred_gbm, pred_lda, classe = testing$classe)
+combModFit <- train(classe ~ ., method = "rf", data = predDF)
+combPred <- predict(combModFit, predDF)
 ```
 
-## Including Plots
+### Model Comparisons
+Now that our models are built, we can compare the results.
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r comparisons, cache=TRUE}
+results <- resamples(list(rf=mod_rf, gbm=mod_gbm, lda=mod_lda, comb=combModFit))
+summary(results)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+As you can see, the predicted accuracy of Random Forest and Boosted are nearly identical. By combining all three, we can get an insignificantly higher accuracy.
+
+Here you can see the results as a box plot:
+
+```{r boxplot, cache=TRUE}
+bwplot(results)
+```
+
+Here are the results as a dot plot
+
+```{r dotplot, cache=TRUE}
+dotplot(results)
+```
+
+### Model Selection
+As the results of Random Forest, Boosted, and Combined were all above 99%, I am going to select the Random Forest model.  Let's go ahead and re-build the model with five fold cross validation and a larger forest.
+
+```{r sample, cache=TRUE}
+# Cross validation
+cv <- trainControl(method="cv", 5)
+mod_rf <- train(classe ~., data=training, method="rf", trControl=cv, ntree=250)
+# View results
+mod_rf
+```
+
+Next, let's estimate against the validation set.
+```{r estimate, cache=TRUE}
+pred_rf <- predict(mod_rf, testing)
+confusionMatrix(testing$classe, pred_rf)
+```
+
+Finally, we can see the overall estimated accuracy for the Random Forest model:
+```{r accuracy, cache=TRUE}
+accuracy <- postResample(pred_rf, testing$classe)
+accuracy
+```
+
+## Summary
+In conclusion, we went with the Random Forest model because:
+* It gave nearly the same accuracy as Boosted
+* Performed much faster than building and combinding with the other algorithims
+* With estimated accuracy of 99%, there is little need for improvement
+
+Our final Random Forest model was built using five fold cross validation.
+
+
+
